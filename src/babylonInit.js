@@ -1,7 +1,9 @@
 // Babylon initialization--including the solid particle system and all
 // corresponding per-grid-update logic.
-// 'frame' = One .fits data frame. Currently must be a square matrix.
-// 'grid'  = A .fits data frame as rendered via Babylon.
+// 'frame' = One .fits data frame as stored in `frames` array. Currently
+//           must be a square matrix to render properly.
+// 'grid'  = A .fits data frame as rendered via Babylon. Contains particles
+//           represent .fits "pixels".
 
 export default function (frames, nFrames) {
 
