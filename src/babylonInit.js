@@ -12,6 +12,7 @@ export default function (frames, nFrames) {
   let canvas = document.getElementById('renderCanvas')
   let engine = new B.Engine(canvas, true)
   let scene = new B.Scene(engine)
+  scene.clearColor = new BABYLON.Color3(0.0, 0.0, 0.0);
 
   // Camera
   let camera = new B.ArcRotateCamera("camera1",  0, 0, 0, new B.Vector3(0, 0, -0), scene)
@@ -59,7 +60,6 @@ export default function (frames, nFrames) {
           SPS.particles[i].position.x = ((row / gridDim) - 0.5) * size
           SPS.particles[i].position.z = ((col / gridDim) - 0.5) * size
           SPS.particles[i].position.y = initY
-          SPS.particles[i].rotation.x = 90
           SPS.particles[i].rotation.x = Math.random() * 3.15
           SPS.particles[i].rotation.y = Math.random() * 3.15
           SPS.particles[i].rotation.z = Math.random() * 1.5
