@@ -102,7 +102,7 @@ export default function (fitsFrames, nFrames) {
         SPS.particles[SPS.vars.nextParticle + i].color.r = SPS.vars.shade
         SPS.particles[SPS.vars.nextParticle + i].color.g = SPS.vars.shade
         SPS.particles[SPS.vars.nextParticle + i].color.b = SPS.vars.shade
-        SPS.particles[SPS.vars.nextParticle + i].color.a = SPS.vars.shade
+        SPS.particles[SPS.vars.nextParticle + i].color.a = 0
         SPS.particles[SPS.vars.nextParticle + i].fitsVal = SPS.vars.shade
       })
 
@@ -116,16 +116,21 @@ export default function (fitsFrames, nFrames) {
   }
 
   // Update all particle positions. Babylon calls this for every particle
-  // on every iteration of the render loop. This is where we implement any
-  // per-particle physics.
-  SPS.updateParticle = function (particle) {
-    if (particle.position.y < -20) {
-      this.recycleParticle(particle)
-    }
-    if (particle.isVisible) {
-      particle.position.y -= 0.3
-      particle.rotation.x += 0.01
-      particle.rotation.z += 0.01
+  // on every iteration of the render loop--thus it should be as simple
+  // and tight as possible. This is where we implement any per-particle
+  // physics.
+  SPS.updateParticle = function (p) {
+    if (p.position.y < -25) {
+      this.recycleParticle(p)
+    } else if (p.isVisible) {
+      p.position.y -= 0.3   // Downward motion
+      p.rotation.x += 0.01  // Rotate slightly
+      p.rotation.z += 0.01
+      if (p.position.y < -20) {
+        p.color.a -= 0.05  // Fade out
+      } else if (p.color.a < p.fitsVal) {
+        p.color.a += 0.05  // Fade in
+      }
     }
   }
 
