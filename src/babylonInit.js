@@ -82,26 +82,27 @@ export default function (frames, nFrames) {
   // data.
   // If we run out of .fits data frames, we start over with the first one.
   let frameIdx = 0        // Index of next fits frame to render
-  let currFrame = []      // Placeholder for current fits frame
+  let currFrame = {}      // Placeholder for current fits frame
   let elapsedRenders = 0  // Babylon frames (i.e. literal animation frames) rendered counter.
   let nextParticle = 0    // Index of first particle in next available particle grid
   let shade = 0           // Shade for new particles
+  let i = 0               // Index for iterating over .fits frames
   SPS.beforeUpdateParticles = () => {
     elapsedRenders++
     if (elapsedRenders == updateInterval) {
-      // Get next un-rendered fits frame
-      console.log('at frame: ', frameIdx)
+      // Get next un-rendered .fits frame
+      console.log('FRAME: ', frameIdx)
       currFrame = frames[frameIdx]
       frameIdx = (frameIdx + 1) % nFrames
 
-      currFrame.frame.forEach((val, i) => {
+      for (i = 0; i < gridArea; i++) {
         if (SPS.particles[nextParticle + i].isVisible == true) {
           console.log('PRE-EMPTIVE RECYCLE')
           SPS.recycleParticle(SPS.particles[nextParticle + i])
         }
         // Normalize to [0, 1]
-        shade = (val - currFrame.extent[0]) /
-                         (currFrame.extent[1] - currFrame.extent[0])
+        shade = (currFrame.frame[i] - currFrame.extent[0]) /
+                (currFrame.extent[1] - currFrame.extent[0])
 
         SPS.particles[nextParticle + i].isVisible = true
         SPS.particles[nextParticle + i].color.r = shade
@@ -109,12 +110,12 @@ export default function (frames, nFrames) {
         SPS.particles[nextParticle + i].color.b = shade
         SPS.particles[nextParticle + i].color.a = 0
         SPS.particles[nextParticle + i].fitsVal = shade
-      })
+      }
 
       nextParticle += gridArea
       elapsedRenders = 0
       if (nextParticle == nParticles) {
-        console.log('reset')
+        console.log('RE-USE FIRST GRID')
         nextParticle = 0
       }
     }
