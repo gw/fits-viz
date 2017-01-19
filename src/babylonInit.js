@@ -26,19 +26,19 @@ export default function (frames, nFrames) {
   let SPS = new B.SolidParticleSystem('SPS', scene)
 
   // Basic parameters
-  let size = 50                                      // Size of each rendered particle grid
-  SPS.vars.updateInterval = 25                       // Render loop interval on which to render new grids
-  SPS.vars.gridDim = 48                              // Num particles in a grid's row/col
-  SPS.vars.gridArea = Math.pow(SPS.vars.gridDim, 2)  // NxN size of a fits frame
-  SPS.vars.nParticles = SPS.vars.gridArea * 20       // Total number of particles in system
-  SPS.vars.initY = 25                                // Initial height of new grids
+  let size = 50                        // Size of each rendered particle grid
+  let updateInterval = 25              // Render loop interval on which to render new grids
+  let gridDim = 48                     // Num particles in a grid's row/col
+  let gridArea = Math.pow(gridDim, 2)  // NxN size of a fits frame
+  let nParticles = gridArea * 20       // Total number of particles in system
+  let initY = 25                       // Initial height of new grids
 
   // Particle model (choose one)
   // let shape = B.MeshBuilder.CreatePolyhedron("tetra", {size: 0.5}, scene)  // Tetrahedron
   // let shape = B.MeshBuilder.CreateDisc("t", {tessellation: 3}, scene)   // Triangle
   let shape = B.MeshBuilder.CreateBox("box", { size: 0.7 }, scene)  // Cube
 
-  SPS.addShape(shape, SPS.vars.nParticles)
+  SPS.addShape(shape, nParticles)
   let mesh = SPS.buildMesh()
   mesh.hasVertexAlpha = true  // Enable alpha channel for all particles
   shape.dispose() // Free for GC
@@ -50,13 +50,13 @@ export default function (frames, nFrames) {
   // .fits frame image.
   SPS.initParticles = () => {
     let i = 0
-    while (i < SPS.vars.nParticles) {
-      for (let row = 0; row < SPS.vars.gridDim; row++) {
-        for (let col = 0; col < SPS.vars.gridDim; col++) {
+    while (i < nParticles) {
+      for (let row = 0; row < gridDim; row++) {
+        for (let col = 0; col < gridDim; col++) {
           SPS.particles[i].isVisible = false
-          SPS.particles[i].position.x = ((row / SPS.vars.gridDim) - 0.5) * size
-          SPS.particles[i].position.z = ((col / SPS.vars.gridDim) - 0.5) * size
-          SPS.particles[i].position.y = SPS.vars.initY
+          SPS.particles[i].position.x = ((row / gridDim) - 0.5) * size
+          SPS.particles[i].position.z = ((col / gridDim) - 0.5) * size
+          SPS.particles[i].position.y = initY
           SPS.particles[i].rotation.x = 90
           SPS.particles[i].rotation.x = Math.random() * 3.15
           SPS.particles[i].rotation.y = Math.random() * 3.15
@@ -70,7 +70,7 @@ export default function (frames, nFrames) {
   // Reset a particle's position to its original height.
   SPS.recycleParticle = (p) => {
     p.isVisible = false
-    p.position.y = SPS.vars.initY
+    p.position.y = initY
   }
 
   // "Render" a new set of particles. Babylon calls this once on every
@@ -81,41 +81,41 @@ export default function (frames, nFrames) {
   // imbuing them with their corresponding pixel value from the .fits
   // data.
   // If we run out of .fits data frames, we start over with the first one.
-  SPS.vars.frameIdx = 0        // Index of next fits frame to render
-  SPS.vars.currFrame = []      // Placeholder for current fits frame
-  SPS.vars.elapsedRenders = 0  // Babylon frames (i.e. literal animation frames) rendered counter.
-  SPS.vars.nextParticle = 0    // Index of first particle in next available particle grid
-  SPS.vars.shade = 0           // Shade for new particles
+  let frameIdx = 0        // Index of next fits frame to render
+  let currFrame = []      // Placeholder for current fits frame
+  let elapsedRenders = 0  // Babylon frames (i.e. literal animation frames) rendered counter.
+  let nextParticle = 0    // Index of first particle in next available particle grid
+  let shade = 0           // Shade for new particles
   SPS.beforeUpdateParticles = () => {
-    SPS.vars.elapsedRenders++
-    if (SPS.vars.elapsedRenders == SPS.vars.updateInterval) {
+    elapsedRenders++
+    if (elapsedRenders == updateInterval) {
       // Get next un-rendered fits frame
-      console.log('at frame: ', SPS.vars.frameIdx)
-      SPS.vars.currFrame = frames[SPS.vars.frameIdx]
-      SPS.vars.frameIdx = (SPS.vars.frameIdx + 1) % nFrames
+      console.log('at frame: ', frameIdx)
+      currFrame = frames[frameIdx]
+      frameIdx = (frameIdx + 1) % nFrames
 
-      SPS.vars.currFrame.frame.forEach((val, i) => {
-        if (SPS.particles[SPS.vars.nextParticle + i].isVisible == true) {
+      currFrame.frame.forEach((val, i) => {
+        if (SPS.particles[nextParticle + i].isVisible == true) {
           console.log('PRE-EMPTIVE RECYCLE')
-          SPS.recycleParticle(SPS.particles[SPS.vars.nextParticle + i])
+          SPS.recycleParticle(SPS.particles[nextParticle + i])
         }
         // Normalize to [0, 1]
-        SPS.vars.shade = (val - SPS.vars.currFrame.extent[0]) /
-                         (SPS.vars.currFrame.extent[1] - SPS.vars.currFrame.extent[0])
+        shade = (val - currFrame.extent[0]) /
+                         (currFrame.extent[1] - currFrame.extent[0])
 
-        SPS.particles[SPS.vars.nextParticle + i].isVisible = true
-        SPS.particles[SPS.vars.nextParticle + i].color.r = SPS.vars.shade
-        SPS.particles[SPS.vars.nextParticle + i].color.g = SPS.vars.shade
-        SPS.particles[SPS.vars.nextParticle + i].color.b = SPS.vars.shade
-        SPS.particles[SPS.vars.nextParticle + i].color.a = 0
-        SPS.particles[SPS.vars.nextParticle + i].fitsVal = SPS.vars.shade
+        SPS.particles[nextParticle + i].isVisible = true
+        SPS.particles[nextParticle + i].color.r = shade
+        SPS.particles[nextParticle + i].color.g = shade
+        SPS.particles[nextParticle + i].color.b = shade
+        SPS.particles[nextParticle + i].color.a = 0
+        SPS.particles[nextParticle + i].fitsVal = shade
       })
 
-      SPS.vars.nextParticle += SPS.vars.gridArea
-      SPS.vars.elapsedRenders = 0
-      if (SPS.vars.nextParticle == SPS.vars.nParticles) {
+      nextParticle += gridArea
+      elapsedRenders = 0
+      if (nextParticle == nParticles) {
         console.log('reset')
-        SPS.vars.nextParticle = 0
+        nextParticle = 0
       }
     }
   }
