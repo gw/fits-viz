@@ -1,0 +1,36 @@
+{
+  "name": "fits-viz",
+  "version": "0.0.0",
+  "description": "Astro Art!",
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack --progress --colors --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grantbot/fits-viz.git"
+  },
+  "author": "Grant Wu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/grantbot/fits-viz/issues"
+  },
+  "homepage": "https://github.com/grantbot/fits-viz#readme",
+  "devDependencies": {
+    "babel-core": "^6.21.0",
+    "babel-loader": "^6.2.10",
+    "babel-preset-es2015": "^6.18.0",
+    "eslint": "^3.13.1",
+    "webpack": "^1.14.0",
+    "webpack-dev-server": "^1.16.2"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": "module"
+    },
+    "env": {
+        "browser": true
+    }
+  }
+}
