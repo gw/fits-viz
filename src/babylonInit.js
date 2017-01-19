@@ -1,57 +1,62 @@
 // Babylon initialization--including the solid particle system and all
-// corresponding per-frame-update logic.
+// corresponding per-grid-update logic.
+// 'frame' = One .fits data frame. Currently must be a square matrix.
+// 'grid'  = A .fits data frame as rendered via Babylon.
 
-export default function (fitsFrames, nFrames) {
-  // Initialize basic scene elements
+export default function (frames, nFrames) {
+
+  /**************************** Scene ****************************/
   let B = BABYLON
   let canvas = document.getElementById('renderCanvas')
   let engine = new B.Engine(canvas, true)
-  let scene = new BABYLON.Scene(engine)
+  let scene = new B.Scene(engine)
 
-  // Set up the camera
-  let camera = new BABYLON.ArcRotateCamera("camera1",  0, 0, 0, new BABYLON.Vector3(0, 0, -0), scene)
-  camera.setPosition(new BABYLON.Vector3(0, 10, -50))
+  // Camera
+  let camera = new B.ArcRotateCamera("camera1",  0, 0, 0, new B.Vector3(0, 0, -0), scene)
+  camera.setPosition(new B.Vector3(0, 10, -50))
   camera.attachControl(canvas, true)
 
-  // Set up lighting
-  let pl = new BABYLON.PointLight("pl", new BABYLON.Vector3(0, 0, 0), scene)
-  pl.diffuse = new BABYLON.Color3(1, 1, 1)
-  pl.intensity = 1.0
+  // Light
+  let light = new B.PointLight("light", new B.Vector3(0, 0, 0), scene)
+  light.diffuse = new B.Color3(1, 1, 1)
+  light.intensity = 1.0
+
+
+  /**************************** SPS ****************************/
+  let SPS = new B.SolidParticleSystem('SPS', scene)
 
   // Basic parameters
-  let fact = 50 			// cube size
-  let updateInterval = 50  // Frame interval to add spawn new particles
-  let fitsFrameSide = 48
-  let fitsFrameArea = Math.pow(fitsFrameSide, 2)  // NxN size of a fits frame
-  let nParticles = fitsFrameArea * 20 // Total number of particles
-  let initY = 20  // Initial height of particl
+  let size = 50                                      // Size of each rendered particle grid
+  SPS.vars.updateInterval = 25                       // Render loop interval on which to render new grids
+  SPS.vars.gridDim = 48                              // Num particles in a grid's row/col
+  SPS.vars.gridArea = Math.pow(SPS.vars.gridDim, 2)  // NxN size of a fits frame
+  SPS.vars.nParticles = SPS.vars.gridArea * 20       // Total number of particles in system
+  SPS.vars.initY = 25                                // Initial height of new grids
 
-  // Set up the particle model
-  // let shape = BABYLON.MeshBuilder.CreatePolyhedron("tetra", {size: 0.5}, scene)  // Tetrahedron
-  // let shape = BABYLON.MeshBuilder.CreateDisc("t", {tessellation: 3}, scene)   // Triangle
-  let shape = BABYLON.MeshBuilder.CreateBox("box", { size: 0.7 }, scene)  // Cube
+  // Particle model (choose one)
+  // let shape = B.MeshBuilder.CreatePolyhedron("tetra", {size: 0.5}, scene)  // Tetrahedron
+  // let shape = B.MeshBuilder.CreateDisc("t", {tessellation: 3}, scene)   // Triangle
+  let shape = B.MeshBuilder.CreateBox("box", { size: 0.7 }, scene)  // Cube
 
-  // Create and configure the solid particle system
-  let SPS = new BABYLON.SolidParticleSystem('SPS', scene)
-  SPS.addShape(shape, nParticles)
+  SPS.addShape(shape, SPS.vars.nParticles)
   let mesh = SPS.buildMesh()
   mesh.hasVertexAlpha = true  // Enable alpha channel for all particles
-  shape.dispose()
+  shape.dispose() // Free for GC
 
   // Set initial properties for all particles. Babylon calls this once.
   // We arrange all particles in F NxN grids, where F is a multiple of N.
   // The order in which we arrange them must match the order in which we
   // update them in updateParticle, so we can accurately "display" the
-  // FITS data.
-  SPS.initParticles = function () {
+  // .fits frame image.
+  SPS.initParticles = () => {
     let i = 0
-    while (i < nParticles) {
-      for (let row = 0; row < fitsFrameSide; row++) {
-        for (let col = 0; col < fitsFrameSide; col++) {
+    while (i < SPS.vars.nParticles) {
+      for (let row = 0; row < SPS.vars.gridDim; row++) {
+        for (let col = 0; col < SPS.vars.gridDim; col++) {
           SPS.particles[i].isVisible = false
-          SPS.particles[i].position.x = ((row / fitsFrameSide) - 0.5) * fact
-          SPS.particles[i].position.z = ((col / fitsFrameSide) - 0.5) * fact
-          SPS.particles[i].position.y = initY
+          SPS.particles[i].position.x = ((row / SPS.vars.gridDim) - 0.5) * size
+          SPS.particles[i].position.z = ((col / SPS.vars.gridDim) - 0.5) * size
+          SPS.particles[i].position.y = SPS.vars.initY
           SPS.particles[i].rotation.x = 90
           SPS.particles[i].rotation.x = Math.random() * 3.15
           SPS.particles[i].rotation.y = Math.random() * 3.15
@@ -63,9 +68,9 @@ export default function (fitsFrames, nFrames) {
   }
 
   // Reset a particle's position to its original height.
-  SPS.recycleParticle = function (particle) {
-    particle.isVisible = false
-    particle.position.y = initY
+  SPS.recycleParticle = (p) => {
+    p.isVisible = false
+    p.position.y = SPS.vars.initY
   }
 
   // "Render" a new set of particles. Babylon calls this once on every
@@ -76,27 +81,27 @@ export default function (fitsFrames, nFrames) {
   // imbuing them with their corresponding pixel value from the .fits
   // data.
   // If we run out of .fits data frames, we start over with the first one.
-  let fitsFrameIdx = 0  // Index of next fits frame to render
-  let currFitsFrame = []  // Placeholder for current fits frame
-  SPS.vars.elapsedFrames = 0  // Babylon frames rendered counter
-  SPS.vars.nextParticle = 0  // Index of first particle in next available frame-sized group
-  SPS.vars.shade = 0        // Shade for new particles
-  SPS.beforeUpdateParticles = function () {
-    SPS.vars.elapsedFrames++
-    if (SPS.vars.elapsedFrames == updateInterval) {
+  SPS.vars.frameIdx = 0        // Index of next fits frame to render
+  SPS.vars.currFrame = []      // Placeholder for current fits frame
+  SPS.vars.elapsedRenders = 0  // Babylon frames (i.e. literal animation frames) rendered counter.
+  SPS.vars.nextParticle = 0    // Index of first particle in next available particle grid
+  SPS.vars.shade = 0           // Shade for new particles
+  SPS.beforeUpdateParticles = () => {
+    SPS.vars.elapsedRenders++
+    if (SPS.vars.elapsedRenders == SPS.vars.updateInterval) {
       // Get next un-rendered fits frame
-      console.log('at frame: ', fitsFrameIdx)
-      currFitsFrame = fitsFrames[fitsFrameIdx]
-      fitsFrameIdx = (fitsFrameIdx + 1) % nFrames
+      console.log('at frame: ', SPS.vars.frameIdx)
+      SPS.vars.currFrame = frames[SPS.vars.frameIdx]
+      SPS.vars.frameIdx = (SPS.vars.frameIdx + 1) % nFrames
 
-      currFitsFrame.frame.forEach(function (val, i) {
+      SPS.vars.currFrame.frame.forEach((val, i) => {
         if (SPS.particles[SPS.vars.nextParticle + i].isVisible == true) {
           console.log('PRE-EMPTIVE RECYCLE')
           SPS.recycleParticle(SPS.particles[SPS.vars.nextParticle + i])
         }
         // Normalize to [0, 1]
-        SPS.vars.shade = (val - currFitsFrame.extent[0]) /
-                         (currFitsFrame.extent[1] - currFitsFrame.extent[0])
+        SPS.vars.shade = (val - SPS.vars.currFrame.extent[0]) /
+                         (SPS.vars.currFrame.extent[1] - SPS.vars.currFrame.extent[0])
 
         SPS.particles[SPS.vars.nextParticle + i].isVisible = true
         SPS.particles[SPS.vars.nextParticle + i].color.r = SPS.vars.shade
@@ -106,9 +111,9 @@ export default function (fitsFrames, nFrames) {
         SPS.particles[SPS.vars.nextParticle + i].fitsVal = SPS.vars.shade
       })
 
-      SPS.vars.nextParticle += fitsFrameArea
-      SPS.vars.elapsedFrames = 0
-      if (SPS.vars.nextParticle == nParticles) {
+      SPS.vars.nextParticle += SPS.vars.gridArea
+      SPS.vars.elapsedRenders = 0
+      if (SPS.vars.nextParticle == SPS.vars.nParticles) {
         console.log('reset')
         SPS.vars.nextParticle = 0
       }
@@ -123,6 +128,7 @@ export default function (fitsFrames, nFrames) {
     if (p.position.y < -25) {
       this.recycleParticle(p)
     } else if (p.isVisible) {
+      // p.position.y -= 0.4 * p.fitsVal // Crazy slurping
       p.position.y -= 0.3   // Downward motion
       p.rotation.x += 0.01  // Rotate slightly
       p.rotation.z += 0.01
@@ -141,15 +147,13 @@ export default function (fitsFrames, nFrames) {
   SPS.computeParticleTexture = false
 
   // Animation
-  scene.registerBeforeRender(function() {
-    pl.position = camera.position
+  scene.registerBeforeRender(() => {
+    light.position = camera.position
     SPS.setParticles()
   })
 
   // Show FPS, diagnostics.
   scene.debugLayer.show()
 
-  engine.runRenderLoop(function () {
-    scene.render()
-  })
+  engine.runRenderLoop(() => scene.render())
 }
