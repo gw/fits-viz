@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babylonjs/2.5.0/babylon.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handjs/1.3.11/hand.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="3.bundle.js" type="text/javascript" charset="utf-8"></script>
+    <style>
+    html, body {
+      overflow: hidden;
+      width   : 100%;
+      height  : 100%;
+      margin  : 0;
+      padding : 0;
+    }
+
+    #renderCanvas {
+      width   : 100%;
+      height  : 100%;
+      touch-action: none;
+    }
+    </style>
+  </head>
+  <body>
+    <input type="file" id="fitsFile">
+    <canvas id="renderCanvas"></canvas>
+  </body>
+</html>
