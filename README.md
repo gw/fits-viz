@@ -6,7 +6,7 @@ $ npm install
 $ npm run dev
 
 (in another shell process)
-$ python -m SimpleHTTPServer
+$ node index.js
 
--> Point your browser to localhost:<whatever-python-tells-you>
+-> Point your browser to localhost:5000
 ```
