@@ -1,6 +1,6 @@
 // App entry point
 
-import '../lib/fits'  // Creates window.astro
+import '../../lib/fits'  // Creates window.astro
 import fitsInit from './fitsInit'
 
 document.addEventListener("DOMContentLoaded", function () {
