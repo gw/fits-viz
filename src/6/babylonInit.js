@@ -1,3 +1,4 @@
+// Fork of experiment 2
 // Babylon initialization--including the solid particle system and all
 // corresponding per-grid-update logic.
 // 'frame' = One .fits data frame as stored in `frames` array. Currently
@@ -73,8 +74,7 @@ export default function (frames, nFrames) {
   let frameIdx = 0        // Index of next fits frame to render
   let currFrame = {}      // Placeholder for current fits frame
   let elapsedRenders = 0  // Babylon frames (i.e. literal animation frames) rendered counter.
-  let shade = 0           // Shade for new particles
-  let i = 0               // Index for iterating over .fits frames
+  let vol = 0             // Placeholder for mic volume
   SPS.beforeUpdateParticles = () => {
     elapsedRenders++
     if (elapsedRenders == updateInterval) {
@@ -82,17 +82,9 @@ export default function (frames, nFrames) {
       currFrame = frames[frameIdx]
       frameIdx = (frameIdx + 1) % nFrames
 
-      for (i = 0; i < gridArea; i++) {
-        // Normalize to [0, 1]
-        shade = (currFrame.frame[i] - currFrame.extent[0]) /
-        (currFrame.extent[1] - currFrame.extent[0])
+      // Sample audio
+      vol = avgVol()
 
-        SPS.particles[i].color.r = avgVol() / 70
-        SPS.particles[i].color.g = shade
-        SPS.particles[i].color.b = shade
-        SPS.particles[i].color.a = shade - 0.1
-        SPS.particles[i].fitsVal = shade
-      }
       elapsedRenders = 0
     }
   }
@@ -101,9 +93,19 @@ export default function (frames, nFrames) {
   // on every iteration of the render loop--thus it should be as simple
   // and tight as possible. This is where we implement any per-particle
   // physics.
+  let shade = 0           // Shade for new particles
   SPS.updateParticle = function (p) {
-    // p.rotation.x += 0.01
-    // p.rotation.z += 0.01
+    if (currFrame.hasOwnProperty('extent') && currFrame.hasOwnProperty('frame')) {
+      // Normalize to [0, 1]
+      shade = (currFrame.frame[p.idx] - currFrame.extent[0]) /
+      (currFrame.extent[1] - currFrame.extent[0])
+
+      p.color.r = vol / 70
+      p.color.g = shade
+      p.color.b = shade
+      p.color.a = shade - 0.1
+      p.fitsVal = shade
+    }
   }
 
   for (let i = 1; i < nClones; i++) {
