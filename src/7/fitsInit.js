@@ -3,9 +3,9 @@ import audioInit from '../../lib/audio'
 
 export default function (fileObj) {
   let nFrames = 100 // Number of .fits data frames to load
-  let frames = []  // Container for loaded .fits data frames
-  let nLoaded = 0  // Number of .fits data frames loaded so far
-  let extent       // [min, max] of values in a frame
+  let frames = []   // Container for loaded .fits data frames
+  let nLoaded = 0   // Number of .fits data frames loaded so far
+  let extent        // [min, max] of values in a frame
 
   // Initialize a new FITS File object
   let fits = new astro.FITS(fileObj, function() {
@@ -18,7 +18,7 @@ export default function (fileObj) {
         frame: frame
       })
       if (nLoaded == nFrames) {
-        audioInit({}, () => babylonInit(frames, nFrames))
+        audioInit({smoothingTimeConstant: 0.6}, () => babylonInit(frames, nFrames))
       }
     })
   })

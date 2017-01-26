@@ -6,6 +6,7 @@ module.exports = {
       4: './src/4/app.js',
       5: './src/5/app.js',
       6: './src/6/app.js',
+      7: './src/7/app.js',
     },
     output: {
         path: './dist',
