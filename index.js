@@ -4,6 +4,7 @@ var express = require('express')
 var app = express()
 
 app.use(express.static('dist'))
+app.use(express.static('data'))
 
 app.get('/', function (req, res) {
   res.send('TODO: Table of Contents')

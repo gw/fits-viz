@@ -167,7 +167,7 @@ export default function (frames, nFrames) {
   })
 
   // Show FPS, diagnostics.
-  scene.debugLayer.show()
+  // scene.debugLayer.show()
 
   engine.runRenderLoop(() => scene.render())
 }
