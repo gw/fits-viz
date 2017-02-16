@@ -39,6 +39,8 @@ export default function (frames, nFrames) {
   let gridArea = Math.pow(gridDim, 2)  // NxN size of a fits frame
   let nParticles = gridArea * 20       // Total number of particles in system
   let initY = 20                       // Initial height of new grids
+  let finalY = -25                     // Height at which grides fade out
+  let rangeY = initY - finalY          // Y range of visible particles
 
   // Particle model (choose one)
   // let shape = B.MeshBuilder.CreatePolyhedron("tetra", {size: 0.5}, scene)  // Tetrahedron
@@ -83,12 +85,19 @@ export default function (frames, nFrames) {
       for (let row = 0; row < gridDim; row++) {
         for (let col = 0; col < gridDim; col++) {
           SPS.particles[i].isVisible = false
+          // Position
           SPS.particles[i].position.x = ((row / gridDim) - 0.5) * size
           SPS.particles[i].position.z = ((col / gridDim) - 0.5) * size
           SPS.particles[i].position.y = initY
+          // Rotation
           SPS.particles[i].rotation.x = Math.random() * 3.15
           SPS.particles[i].rotation.y = Math.random() * 3.15
           SPS.particles[i].rotation.z = Math.random() * 1.5
+          // UV
+          SPS.particles[i].uvs.x = 0
+          SPS.particles[i].uvs.y = 0
+          SPS.particles[i].uvs.z = 0
+          SPS.particles[i].uvs.w = 0
           i++
         }
       }
@@ -99,6 +108,10 @@ export default function (frames, nFrames) {
   SPS.recycleParticle = (p) => {
     p.isVisible = false
     p.position.y = initY
+    p.uvs.x = 0
+    p.uvs.y = 0
+    p.uvs.z = 0
+    p.uvs.w = 0
   }
 
   // "Render" a new set of particles. Babylon calls this once on every
@@ -157,8 +170,11 @@ export default function (frames, nFrames) {
   // on every iteration of the render loop--thus it should be as simple
   // and tight as possible. This is where we implement any per-particle
   // physics.
+  let normX;
+  let normY;
+  let xStep = 1 / 48
   SPS.updateParticle = function (p) {
-    if (p.position.y < -25) {
+    if (p.position.y < finalY) {
       this.recycleParticle(p)
     } else if (p.isVisible) {
       // Downward motion
@@ -168,6 +184,14 @@ export default function (frames, nFrames) {
       p.rotation.x += 0.01 + (0.1 * vol)
       p.rotation.y += 0.01 + (0.1 * vol)
       p.rotation.z += 0.01 + (0.1 * vol)
+
+      // Video projection
+      normX = p.position.x + 0.5
+      normY = (p.position.y - finalY) / rangeY
+      p.uvs.x = normX
+      p.uvs.y = normY
+      p.uvs.z = normX + xStep
+      p.uvs.w = normY + 0.01
 
       if (p.position.y < -20) {
         p.color.a -= 0.05  // Fade out
