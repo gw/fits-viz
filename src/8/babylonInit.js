@@ -93,11 +93,6 @@ export default function (frames, nFrames) {
           SPS.particles[i].rotation.x = Math.random() * 3.15
           SPS.particles[i].rotation.y = Math.random() * 3.15
           SPS.particles[i].rotation.z = Math.random() * 1.5
-          // UV
-          SPS.particles[i].uvs.x = 0
-          SPS.particles[i].uvs.y = 0
-          SPS.particles[i].uvs.z = 0
-          SPS.particles[i].uvs.w = 0
           i++
         }
       }
@@ -108,10 +103,6 @@ export default function (frames, nFrames) {
   SPS.recycleParticle = (p) => {
     p.isVisible = false
     p.position.y = initY
-    p.uvs.x = 0
-    p.uvs.y = 0
-    p.uvs.z = 0
-    p.uvs.w = 0
   }
 
   // "Render" a new set of particles. Babylon calls this once on every
@@ -150,9 +141,6 @@ export default function (frames, nFrames) {
                 (currFrame.extent[1] - currFrame.extent[0])
 
         SPS.particles[nextParticle + i].isVisible = true
-        SPS.particles[nextParticle + i].color.r = shade
-        SPS.particles[nextParticle + i].color.g = shade
-        SPS.particles[nextParticle + i].color.b = shade
         SPS.particles[nextParticle + i].color.a = 0
         SPS.particles[nextParticle + i].fitsVal = shade
       }
@@ -169,9 +157,15 @@ export default function (frames, nFrames) {
   // Update all particle positions. Babylon calls this for every particle
   // on every iteration of the render loop--thus it should be as simple
   // and tight as possible. This is where we implement any per-particle
-  // physics.
-  let normX;
-  let normY;
+  // logic.
+  // Manipulating particle.uvs lets you choose which part of a larger texture
+  // (in this case, a videotexture that holds the webcam feed) to display
+  // on the particle. See: http://doc.babylonjs.com/overviews/solid_particle_system#uvs
+  // Projecting a video stream onto a cloud of particles may be more
+  // appropriately handled with a custom shader but I don't know enough
+  // about that stuff yet.
+  let uvX;  // Corresponds to particle.uvs.x. Scaled according to particle's position.
+  let uvY;  // Corresponds to particle.uvs.y. Scaled according to particle's position.
   let xStep = 1 / 48
   SPS.updateParticle = function (p) {
     if (p.position.y < finalY) {
@@ -185,13 +179,20 @@ export default function (frames, nFrames) {
       p.rotation.y += 0.01 + (0.1 * vol)
       p.rotation.z += 0.01 + (0.1 * vol)
 
-      // Video projection
-      normX = p.position.x + 0.5
-      normY = (p.position.y - finalY) / rangeY
-      p.uvs.x = normX
-      p.uvs.y = normY
-      p.uvs.z = normX + xStep
-      p.uvs.w = normY + 0.01
+      // Videotexture projection
+      // Subtracting the normalized values from 1 shouldn't
+      // be necessary--the texture is somehow inverted, and
+      // I haven't yet figured out how to correct it directly
+      // on the texture. For now, this hack seems to work.
+      // See: https://www.babylonjs-playground.com/#2FPT1A#132
+      uvX = 1 - ((p.position.x - (-0.5 * size)) / (size))
+      uvY = 1 - ((p.position.y - finalY) / rangeY)
+      p.uvs.x = uvX
+      p.uvs.y = uvY
+      // These `step` values are pretty arbitrary;
+      // they just change the 'crop frame' size.
+      p.uvs.z = uvX + xStep
+      p.uvs.w = uvY + 0.1
 
       if (p.position.y < -20) {
         p.color.a -= 0.05  // Fade out
@@ -203,9 +204,6 @@ export default function (frames, nFrames) {
 
   SPS.initParticles()
   SPS.setParticles()
-
-  // Our particles aren't changing textures after init.
-  SPS.computeParticleTexture = false
 
   // Animation
   scene.registerBeforeRender(() => {
