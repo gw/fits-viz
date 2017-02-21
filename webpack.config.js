@@ -8,6 +8,7 @@ module.exports = {
       6: './src/6/app.js',
       7: './src/7/app.js',
       8: './src/8/app.js',
+      9: './src/9/app.js',
     },
     output: {
         path: './dist',
